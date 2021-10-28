@@ -1,28 +1,21 @@
-# infrastructure
-# Terraform
+# Infrastructure
+Contains Terraform infrastructure code for provisioning and managing network resources
 
-## Dependencies
-1. Install and Configure AWS Command Line Interface
-2. Create User profile with region "us-east-1"
-3. Install terraform
-
-## Build Guide
-1. cd into the directory cloned
-2. perform the command
-```bash
-$ cd Desktop/infrastructure/modules/VPC/vpc1
-```
-
-## Performing Terraform actions
-1. To initialize AWS plugins, perform:
-```bash
-$ terraform init
-```
-2. To apply the changes required to reach the desired state of the configuration, perform:
-```bash
-$ terraform apply
-```
-3. To delete the resource and infrastructure created by terrform, perform:
-```bash
-$ terraform destroy
-```
+## Setup Instructions
+1. clone the repository
+2. run terraform init
+3. create a .tfvars file with the following properties - 
+    aws_profile                        = "prod"
+    aws_region                         = "us-east-1"
+    vpc_name                           = "vpc-1"
+    vpc_cidr_block                     = "10.0.0.0/16"
+    vpc_enable_dns_hostnames           = true
+    vpc_enable_classiclink_dns_support = true
+    vpc_subnet_map = {
+        "us-east-1a" : "10.0.1.0/24"
+        "us-east-1b" : "10.0.2.0/24"
+        "us-east-1c" : "10.0.3.0/24"
+    }
+4. adjust the tfvars as needed
+5. run terraform plan/apply/destroy supplying the .tfvars file
+   eg :- terraform plan -var-file="dev.tfvars"
