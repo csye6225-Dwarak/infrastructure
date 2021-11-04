@@ -19,6 +19,7 @@ resource "aws_db_instance" "rdsDbInstance" {
   allocated_storage = 20
   max_allocated_storage = 0
   multi_az = false
+  name = var.db_name
   engine                 = "mysql"
   engine_version         = "8.0.25"
   username               = var.username

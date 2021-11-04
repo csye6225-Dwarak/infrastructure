@@ -51,6 +51,10 @@ variable "rds_password" {
   type = string
 }
 
+variable "db_name" {
+  type = string
+}
+
 // S3 VARS
 
 variable "s3_domain" {
