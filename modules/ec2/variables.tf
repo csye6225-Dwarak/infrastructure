@@ -23,6 +23,11 @@ variable "rds_identifier" {
   description = "Identifier for the RDS instance"
 }
 
+variable "db_name" {
+  type        = string
+  description = "RDS Database name"
+}
+
 variable "database_username" {
   type        = string
   description = "Username for the RDS instance"

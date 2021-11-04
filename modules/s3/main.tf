@@ -25,3 +25,10 @@ resource "aws_s3_bucket" "s3" {
   //   Name        = "Profile Picture bucket"
   // }
 }
+
+resource "aws_s3_bucket_public_access_block" "s3" {
+  bucket = "${var.name}.${var.environment}.${var.domain}"
+
+  block_public_acls   = true
+  block_public_policy = true
+}

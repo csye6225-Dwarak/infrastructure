@@ -40,7 +40,7 @@ resource "aws_security_group" "application" {
       self = false
     },
     {
-      description = "HTTP"
+      description = ""
       from_port        = 80
       to_port          = 80
       protocol         = "tcp"
@@ -62,9 +62,9 @@ resource "aws_security_group" "application" {
       self = false
     },
     {
-      description = "NODE"
-      from_port        = 5000
-      to_port          = 5000
+      description = "HTTP"
+      from_port        = 8080
+      to_port          = 8080
       protocol         = "tcp"
       cidr_blocks      = ["0.0.0.0/0"]
       ipv6_cidr_blocks = []
@@ -126,10 +126,9 @@ resource "aws_security_group" "database" {
       to_port          = 3306
       protocol         = "tcp"
       cidr_blocks      = [aws_vpc.vpc.cidr_block]
-      security_groups = [aws_security_group.application.name]
+      security_groups = [aws_security_group.application.id]
       ipv6_cidr_blocks = []
       prefix_list_ids = []
-      security_groups = []
       self = false
     }
   ]

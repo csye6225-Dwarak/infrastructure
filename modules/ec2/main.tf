@@ -32,15 +32,15 @@ resource "aws_instance" "webapp" {
   vpc_security_group_ids = [var.security_group_id]
   subnet_id = element(tolist(data.aws_subnet_ids.subnets.ids),0)
   //user_data = data.template_file.config_data.rendered
-  user_data               = <<EOF
-    #!/bin/bash
-    echo "host=jdbc:mysql://${data.aws_db_instance.database.endpoint}:3306/${var.rds_identifier} >> /etc/environment
-    echo "port=3306" >> /etc/environment
-    echo "database=${var.rds_identifier}" >> /etc/environment
-    echo "username=${var.database_username}" >> /etc/environment
-    echo "password=${var.database_password}" >> /etc/environment
-    echo "bucket_name=${var.s3_bucket}" >> /etc/environment
-    EOF
+  user_data               = <<-EOF
+                            #!/bin/bash
+                            sudo echo "export host=jdbc:mysql://${data.aws_db_instance.database.endpoint}/${var.db_name}" >> /etc/environment
+                            sudo echo "export port=3306" >> /etc/environment
+                            sudo echo "export database=${var.db_name}" >> /etc/environment
+                            sudo echo "export dbusername=${var.database_username}" >> /etc/environment
+                            sudo echo "export dbpassword=${var.database_password}" >> /etc/environment
+                            sudo echo "export bucketName=${var.s3_bucket}" >> /etc/environment
+                            EOF
   root_block_device{
     delete_on_termination = true
     volume_size = 20
@@ -79,7 +79,9 @@ resource "aws_iam_policy" "policy" {
         {
             "Action": [
                 "sts:AssumeRole",
-                "s3:*"
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
             ],
             "Effect": "Allow",
             "Resource": [

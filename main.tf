@@ -16,6 +16,7 @@ module "rdsModule" {
   source            = "./modules/rds"
   vpc_id            = module.vpcModule.vpc_id
   security_group_id = module.vpcModule.database_securitygroup_id
+  db_name           = var.db_name
   rds_identifier    = var.rds_identifier
   username          = var.rds_username
   password          = var.rds_password
@@ -36,6 +37,7 @@ module "ec2Module" {
   vpc_id            = module.vpcModule.vpc_id
   security_group_id = module.vpcModule.application_securitygroup_id
   s3_bucket         = module.s3Module.s3_bucket
+  db_name           = var.db_name
   rds_identifier    = var.rds_identifier
   database_username = var.rds_username
   database_password = var.rds_password
