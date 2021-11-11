@@ -42,3 +42,13 @@ variable "ami_id" {
     type = string
     description = "ami image to build the instance from"
 }
+
+variable "my_domain" {
+    type = string
+    description = "domain"
+}
+
+variable "aws_profile" {
+  type        = string
+  description = "AWS account profile to create resources in"
+}
