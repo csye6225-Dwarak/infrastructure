@@ -48,12 +48,26 @@ resource "aws_instance" "webapp" {
   }
 
   tags = {
-    Name = "Webapp"
+    Name = "webapp"
   }
 }
 
+#Route53
+data "aws_route53_zone" "my_domain" {
+  name         = "${var.aws_profile}.${var.my_domain}"
+  private_zone = false
+}
+
+resource "aws_route53_record" "route53_record" {
+  zone_id = data.aws_route53_zone.my_domain.zone_id
+  name    = "${var.aws_profile}.${var.my_domain}"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.webapp.public_ip]
+}
+
 resource "aws_iam_role" "ec2_s3_access_role" {
-  name               = "EC2-CSYE6225"
+  name               = "CodeDeployEC2ServiceRole"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -68,6 +82,30 @@ resource "aws_iam_role" "ec2_s3_access_role" {
     ]
   })
 }
+
+resource "aws_iam_policy" "cd_ec2_s3" {
+  name   = "CodeDeploy-EC2-S3"
+  policy = <<-EOF
+{
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:Get*",
+                    "s3:List*"
+                ],
+                "Resource": [
+                    "arn:aws:s3:::${var.codedeploy_bucket}",
+                    "arn:aws:s3:::${var.codedeploy_bucket}/*"
+                ]
+            }
+        ]
+}
+EOF
+}
+
+
 
 resource "aws_iam_policy" "policy" {
     name = "WebAppS3"
@@ -100,7 +138,13 @@ resource "aws_iam_role_policy_attachment" "test-attach" {
   policy_arn = aws_iam_policy.policy.arn
 }
 
+resource "aws_iam_role_policy_attachment" "cd_ec2_s3_attach" {
+  role       = aws_iam_role.ec2_s3_access_role.name
+  policy_arn = aws_iam_policy.cd_ec2_s3.arn
+}
+
 resource "aws_iam_instance_profile" "s3_profile" {                             
     name  = "s3_profile"                         
     role = aws_iam_role.ec2_s3_access_role.name
 }
+
