@@ -43,6 +43,8 @@ module "ec2Module" {
   database_password = var.rds_password
   ami_id            = var.ec2_ami_id
   ssh_key           = var.ec2_ssh_key
+  my_domain = var.my_domain
+  aws_profile = var.aws_profile
   depends_on = [
     module.vpcModule,
     module.s3Module,
