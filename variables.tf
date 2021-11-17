@@ -1,81 +1,71 @@
-// GLOBAL VARS
+variable "vpc_cidr_block" {
+  type        = string
+  description = "CIDR for VPC"
+  //   default     = "10.0.0.0/16"
+}
 
 variable "aws_profile" {
   type        = string
-  description = "AWS account profile to create resources in"
+  description = ""
 }
 
-variable "aws_region" {
+variable "subnet_az_cidr" {
+  type        = map(any)
+  description = "CIDR for Subnets"
+}
+
+variable "bucket" {
   type        = string
-  description = "AWS region to create resources in"
+  description = "Bucket name in S3"
 }
 
-// VPC VARS
-
-variable "vpc_name" {
+variable "identifier" {
   type        = string
-  description = "VPC resource name on AWS"
+  description = "MySql identifier"
 }
 
-variable "vpc_cidr_block" {
+variable "port" {
   type        = string
-  description = "VPC CIDR range"
+  description = "MySql port"
 }
 
-variable "vpc_subnet_map" {
-  type        = map(string)
-  description = "mapping of subnet AZ to CIDR block"
+variable "username" {
+  type        = string
+  description = "MySql username"
 }
 
-variable "vpc_enable_classiclink_dns_support" {
-  type        = bool
-  description = "A boolean flag to enable/disable ClassicLink DNS Support for the VPC"
+variable "password" {
+  type        = string
+  description = "MySql password"
 }
 
-variable "vpc_enable_dns_hostnames" {
-  type        = bool
-  description = "A boolean flag to enable/disable DNS hostnames in the VPC"
+variable "ssh" {
+  type        = string
+  description = "SSH Key"
 }
 
-// RDS VARS
-
-variable "rds_identifier" {
-  type = string
-}
-
-variable "rds_username" {
-  type = string
-}
-
-variable "rds_password" {
-  type = string
-}
-
-variable "db_name" {
-  type = string
-}
-
-// S3 VARS
-
-variable "s3_domain" {
-  type = string
-}
-
-variable "s3_name" {
-  type = string
-}
-
-// EC2 VARS 
-
-variable "ec2_ami_id" {
-  type = string
-}
-
-variable "ec2_ssh_key" {
-  type = string
+variable "ami" {
+  type        = string
+  description = "AMI ID"
 }
 
 variable "my_domain" {
-    type = string
-    description = "domain"
+  type        = string
+  description = "Domain Name"
 }
+
+variable "codedeploy_bucket" {
+  type        = string
+  description = "bucket for webapp code deploy"
+}
+
+variable "cd_application_name" {
+  type        = string
+  description = "Code Deploy Application Name"
+}
+
+variable "ec2InstanceType" {
+  type        = string
+  description = "Instance type of EC2"
+}
+
