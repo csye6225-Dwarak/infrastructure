@@ -318,9 +318,9 @@ resource "aws_codedeploy_deployment_group" "code_deploy_deployment_group" {
 
   ec2_tag_set {
     ec2_tag_filter {
-      key   = "Name"
+      key   = "name"
       type  = "KEY_AND_VALUE"
-      value = "webapp"
+      value = "csye6225-webapp"
     }
   }
 
@@ -447,8 +447,8 @@ resource "aws_launch_configuration" "asg_launch_config" {
   }
   user_data = <<-EOF
         #!/bin/bash
-        sudo echo "export host=jdbc:mysql://${data.aws_db_instance.database.endpoint}/${var.identifier}" >> /etc/environment
-        sudo echo "export database=${var.identifier}" >> /etc/environment
+        sudo echo "export host=jdbc:mysql://${data.aws_db_instance.database.endpoint}/users" >> /etc/environment
+        sudo echo "export database=users" >> /etc/environment
         sudo echo "export username=${var.username}" >> /etc/environment
         sudo echo "export password=${var.password}" >> /etc/environment
         sudo echo "export bucketName=${var.bucket}" >> /etc/environment
@@ -474,8 +474,8 @@ resource "aws_autoscaling_group" "WebServerGroup" {
   health_check_grace_period = 200
   depends_on                = [aws_launch_configuration.asg_launch_config]
   tag {
-    key                 = "Name"
-    value               = "webapp"
+    key                 = "name"
+    value               = "csye6225-webapp"
     propagate_at_launch = true
   }
 }
