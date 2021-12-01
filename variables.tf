@@ -69,3 +69,22 @@ variable "ec2InstanceType" {
   description = "Instance type of EC2"
 }
 
+variable "acc_num" {
+  type        = string
+  description = "Account Number"
+}
+
+variable "rds_username" {
+  type        = string
+  description = "rds replica username"
+}
+
+variable "rds_password" {
+  type        = string
+  description = "rds replica password"
+}
+
+variable "availability_zone" {
+  type        = string
+  description = "availability_zone"
+}

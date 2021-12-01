@@ -280,11 +280,12 @@ resource "aws_db_instance" "rdsDbInstance" {
   storage_type           = "gp2"
   allocated_storage      = 20
   max_allocated_storage  = 0
-  multi_az               = false
+  multi_az               = true
   db_subnet_group_name   = aws_db_subnet_group.rdsSubnets.name
   vpc_security_group_ids = ["${aws_security_group.sg-database.id}"]
   parameter_group_name   = aws_db_parameter_group.dbParaGp.name
   publicly_accessible    = false
+  backup_retention_period = 1
 }
 
 resource "aws_key_pair" "ssh_key" {
@@ -315,7 +316,7 @@ resource "aws_codedeploy_deployment_group" "code_deploy_deployment_group" {
     deployment_option = "WITHOUT_TRAFFIC_CONTROL"
     deployment_type   = "IN_PLACE"
   }
-
+  autoscaling_groups = [aws_autoscaling_group.WebServerGroup.name]
   ec2_tag_set {
     ec2_tag_filter {
       key   = "name"
@@ -323,7 +324,6 @@ resource "aws_codedeploy_deployment_group" "code_deploy_deployment_group" {
       value = "csye6225-webapp"
     }
   }
-
 
   load_balancer_info {
     target_group_info {
@@ -393,8 +393,9 @@ resource "aws_route53_record" "route53_record" {
 
 
 data "aws_ami" "ubuntuec2" {
+  //executable_users = [var.acc_num]
   most_recent = true
-  owners      = ["self"]
+  owners      = [var.acc_num]
 }
 
 
@@ -414,6 +415,7 @@ resource "aws_lb" "loadbalancer" {
 
 resource "aws_lb_target_group" "AutoScalingTargetGroup" {
   name                 = "AutoScalingTargetGroup"
+  target_type          = "instance"
   port                 = 8080
   protocol             = "HTTP"
   vpc_id               = aws_vpc.vpc.id
@@ -452,7 +454,8 @@ resource "aws_launch_configuration" "asg_launch_config" {
         sudo echo "export username=${var.username}" >> /etc/environment
         sudo echo "export password=${var.password}" >> /etc/environment
         sudo echo "export bucketName=${var.bucket}" >> /etc/environment
-                
+        sudo echo "export rds_username=${var.rds_username}" >> /etc/environment
+        sudo echo "export rds_password=${var.rds_password}" >> /etc/environment        
         EOF
 
   associate_public_ip_address = "true"
@@ -666,4 +669,253 @@ resource "aws_iam_role_policy_attachment" "CodeDeployEC2ServiceRole_WebAppS3" {
 resource "aws_iam_instance_profile" "ec2_codedeploy_profile" {
   name = "ec2_codedeploy_profile"
   role = aws_iam_role.CodeDeployEC2ServiceRole.name
+}
+
+// resource "aws_db_instance" "rdsDbInstance-read-replica" {
+//   count = 1
+//   availability_zone = var.availability_zone
+//   name                   = "${var.identifier}-ReadReplica"
+//   instance_class         = "db.t3.micro"
+//   skip_final_snapshot    = true
+//   allocated_storage      = 20
+//   max_allocated_storage  = 0
+//   multi_az               = false
+//   engine                 = "mysql"
+//   engine_version         = "8.0.25"
+//   username               = var.rds_username
+//   password               = var.rds_password
+//   db_subnet_group_name   = aws_db_subnet_group.rdsSubnets.name
+//   vpc_security_group_ids = ["${aws_security_group.sg-database.id}"]
+//   parameter_group_name   = aws_db_parameter_group.dbParaGp.name
+//   publicly_accessible    = false
+//   replicate_source_db = aws_db_instance.rdsDbInstance.id
+// }
+
+resource "aws_db_instance" "rdsDbInstance-read-replica" {
+  identifier = "replica"
+  instance_class         = "db.t3.micro"
+  multi_az               = true
+  engine                 = "mysql"
+  engine_version         = "8.0.25"
+  publicly_accessible    = false
+  replicate_source_db    = aws_db_instance.rdsDbInstance.id
+  skip_final_snapshot = true
+}
+
+resource "aws_iam_role" "CodeDeployLambdaServiceRole" {
+name           = "iam_for_lambda_with_sns"
+path           = "/"
+assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": ["lambda.amazonaws.com","codedeploy.us-east-1.amazonaws.com"]
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+tags = {
+Name = "CodeDeployLambdaServiceRole"
+}
+}
+
+resource "aws_dynamodb_table" "mydbtable" {
+    provider = aws
+    name = "csye6225-dynamo"
+    hash_key = "id"
+    read_capacity = 1
+    write_capacity = 1
+
+    attribute {
+        name = "id"
+        type = "S"
+    }
+
+    ttl {
+        attribute_name = "TimeToExist"
+        enabled        = true
+    }
+
+}
+
+
+resource "aws_s3_bucket_object" "object" {
+  bucket = "prod.codedeploy.dwarak.me"
+  key    = "lambda_function.zip"
+  source = "/home/dwarak93/Desktop/server.zip"
+//   depends_on = [data.archive_file.lambda_zip]
+
+  # The filemd5() function is available in Terraform 0.11.12 and later
+  # For Terraform 0.11.11 and earlier, use the md5() function and the file() function:
+  # etag = "${md5(file("path/to/file"))}"
+  #etag = filemd5("/home/vivekshakya/cloud-assignments/infrastructure/lambda_function.zip")
+}
+
+
+#Lambda Function
+resource "aws_lambda_function" "lambdaFunction" {
+  s3_bucket = "prod.codedeploy.dwarak.me"
+  s3_key    = "lambda_function.zip"
+  /* filename         = "lambda_function.zip" */
+  function_name    = "lambda_function_name"
+  role             = "${aws_iam_role.CodeDeployLambdaServiceRole.arn}"
+  handler          = "index.handler"
+  runtime          = "nodejs12.x"
+  /* source_code_hash = "${data.archive_file.lambda_zip.output_base64sha256}" */
+  environment {
+    variables = {
+      timeToLive = "5"
+    }
+  }
+  depends_on    = [aws_s3_bucket_object.object]
+}
+
+
+
+// resource "aws_lambda_function" "lambdaFunction" {
+// filename        = "${data.archive_file.dummy.output_path}"
+// function_name   = "csye6225"
+// role            = "${aws_iam_role.CodeDeployLambdaServiceRole.arn}"
+// handler         = "index.handler"
+// runtime         = "nodejs12.x"
+// memory_size     = 256
+// timeout         = 180
+// reserved_concurrent_executions  = 5
+// environment  {
+// variables = {
+// DOMAIN_NAME = "prod.dwarak.me"
+// table  = aws_dynamodb_table.mydbtable.name
+// }
+// }
+// tags = {
+// Name = "Lambda Email"
+// }
+// }
+
+// data "archive_file" "dummy" {
+//   type = "zip"
+//   output_path = "/Users/maneeshsakthivel/Desktop/Cloud/server.zip"
+
+//   source {
+//     content = "hello"
+//     filename = "dummy.txt"
+
+//   }
+// }
+
+resource "aws_sns_topic" "EmailNotificationRecipeEndpoint" {
+name          = "EmailNotificationRecipeEndpoint"
+}
+
+resource "aws_sns_topic_subscription" "topicId" {
+topic_arn       = "${aws_sns_topic.EmailNotificationRecipeEndpoint.arn}"
+protocol        = "lambda"
+endpoint        = "${aws_lambda_function.lambdaFunction.arn}"
+depends_on      = [aws_lambda_function.lambdaFunction]
+}
+
+resource "aws_lambda_permission" "lambda_permission" {
+statement_id  = "AllowExecutionFromSNS"
+action        = "lambda:InvokeFunction"
+principal     = "sns.amazonaws.com"
+source_arn    = "${aws_sns_topic.EmailNotificationRecipeEndpoint.arn}"
+function_name = "${aws_lambda_function.lambdaFunction.function_name}"
+depends_on    = [aws_lambda_function.lambdaFunction]
+
+}
+
+resource "aws_iam_policy" "lambda_policy" {
+name        = "lambda"
+depends_on = [aws_sns_topic.EmailNotificationRecipeEndpoint]
+policy =  <<EOF
+{
+          "Version" : "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "LambdaDynamoDBAccess",
+              "Effect": "Allow",
+              "Action": ["dynamodb:GetItem",
+              "dynamodb:PutItem",
+              "dynamodb:UpdateItem"],
+              "Resource": "arn:aws:dynamodb:us-east-1:*****:table/csye6225-dynamo"
+            },
+            {
+              "Sid": "LambdaSESAccess",
+              "Effect": "Allow",
+              "Action": ["ses:VerifyEmailAddress",
+              "ses:SendEmail",
+              "ses:SendRawEmail"],
+              "Resource": "arn:aws:ses:us-east-1:*****:identity/*"
+            },
+            {
+              "Sid": "LambdaS3Access",
+              "Effect": "Allow",
+              "Action": ["s3:GetObject","s3:PutObject"],
+              "Resource": "arn:aws:s3:::lambda.codedeploy.bucket/*"
+            },
+            {
+              "Sid": "LambdaSNSAccess",
+              "Effect": "Allow",
+              "Action": ["sns:ConfirmSubscription"],
+              "Resource": "${aws_sns_topic.EmailNotificationRecipeEndpoint.arn}"
+            }
+          ]
+        }
+EOF
+}
+
+resource "aws_iam_policy" "topic_policy" {
+name        = "Topic"
+description = ""
+depends_on  = [aws_sns_topic.EmailNotificationRecipeEndpoint]
+policy      = <<EOF
+{
+          "Version" : "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "AllowEC2ToPublishToSNSTopic",
+              "Effect": "Allow",
+              "Action": ["sns:Publish",
+              "sns:CreateTopic"],
+              "Resource": "${aws_sns_topic.EmailNotificationRecipeEndpoint.arn}"
+            }
+          ]
+        }
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attach_predefinedrole" {
+role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_policy_attach_role" {
+role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+policy_arn = "${aws_iam_policy.lambda_policy.arn}"
+}
+
+resource "aws_iam_role_policy_attachment" "topic_policy_attach_role" {
+role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+policy_arn = "${aws_iam_policy.topic_policy.arn}"
+}
+
+resource "aws_iam_role_policy_attachment" "dynamoDB_policy_attach_role" {
+role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+}
+
+resource "aws_iam_role_policy_attachment" "ses_policy_attach_role" {
+role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+policy_arn = "arn:aws:iam::aws:policy/AmazonSESFullAccess"
 }
