@@ -78,3 +78,13 @@ variable "availability_zone" {
   type        = string
   description = "availability_zone"
 }
+
+variable "primaryZone" {
+  type        = string
+  description = "primary availability_zone"
+}
+
+variable "secondaryZone" {
+  type        = string
+  description = "secondary availability_zone"
+}

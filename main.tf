@@ -280,7 +280,8 @@ resource "aws_db_instance" "rdsDbInstance" {
   storage_type           = "gp2"
   allocated_storage      = 20
   max_allocated_storage  = 0
-  multi_az               = true
+  multi_az               = false
+  availability_zone       = var.primaryZone
   db_subnet_group_name   = aws_db_subnet_group.rdsSubnets.name
   vpc_security_group_ids = ["${aws_security_group.sg-database.id}"]
   parameter_group_name   = aws_db_parameter_group.dbParaGp.name
@@ -698,10 +699,11 @@ resource "aws_iam_instance_profile" "ec2_codedeploy_profile" {
 resource "aws_db_instance" "rdsDbInstance-read-replica" {
   identifier = "replica"
   instance_class         = "db.t3.micro"
-  multi_az               = true
+  name                   = "users"
   engine                 = "mysql"
   engine_version         = "8.0.25"
   publicly_accessible    = false
+  availability_zone       = var.secondaryZone
   replicate_source_db    = aws_db_instance.rdsDbInstance.id
   skip_final_snapshot = true
 }
