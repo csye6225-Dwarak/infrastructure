@@ -804,7 +804,7 @@ resource "aws_lambda_function" "lambdaFunction" {
 
 // data "archive_file" "dummy" {
 //   type = "zip"
-//   output_path = "/Users/maneeshsakthivel/Desktop/Cloud/server.zip"
+//   output_path = "/Users/dwarak/Desktop/Cloud/server.zip"
 
 //   source {
 //     content = "hello"
@@ -912,11 +912,11 @@ depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
 policy_arn = "${aws_iam_policy.topic_policy.arn}"
 }
 
-// resource "aws_iam_role_policy_attachment" "dynamoDB_policy_attach_role" {
-// role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
-// depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
-// policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-// }
+resource "aws_iam_role_policy_attachment" "dynamoDB_policy_attach_role" {
+role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+}
 
 resource "aws_iam_role_policy_attachment" "ses_policy_attach_role" {
 role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
