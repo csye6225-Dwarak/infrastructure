@@ -280,7 +280,8 @@ resource "aws_db_instance" "rdsDbInstance" {
   storage_type           = "gp2"
   allocated_storage      = 20
   max_allocated_storage  = 0
-  multi_az               = true
+  multi_az               = false
+  availability_zone       = var.primaryZone
   db_subnet_group_name   = aws_db_subnet_group.rdsSubnets.name
   vpc_security_group_ids = ["${aws_security_group.sg-database.id}"]
   parameter_group_name   = aws_db_parameter_group.dbParaGp.name
@@ -295,6 +296,11 @@ resource "aws_key_pair" "ssh_key" {
 
 data "aws_db_instance" "database" {
   depends_on             = [aws_db_instance.rdsDbInstance]
+  db_instance_identifier = var.identifier
+}
+
+data "aws_db_instance" "database2" {
+  depends_on             = [aws_db_instance.rdsDbInstance-read-replica]
   db_instance_identifier = var.identifier
 }
 
@@ -454,8 +460,7 @@ resource "aws_launch_configuration" "asg_launch_config" {
         sudo echo "export username=${var.username}" >> /etc/environment
         sudo echo "export password=${var.password}" >> /etc/environment
         sudo echo "export bucketName=${var.bucket}" >> /etc/environment
-        sudo echo "export rds_username=${var.rds_username}" >> /etc/environment
-        sudo echo "export rds_password=${var.rds_password}" >> /etc/environment        
+        sudo echo "export host1=jdbc:mysql://${data.aws_db_instance.database2.endpoint}/users" >> /etc/environment      
         EOF
 
   associate_public_ip_address = "true"
@@ -694,10 +699,11 @@ resource "aws_iam_instance_profile" "ec2_codedeploy_profile" {
 resource "aws_db_instance" "rdsDbInstance-read-replica" {
   identifier = "replica"
   instance_class         = "db.t3.micro"
-  multi_az               = true
+  name                   = "users"
   engine                 = "mysql"
   engine_version         = "8.0.25"
   publicly_accessible    = false
+  availability_zone       = var.secondaryZone
   replicate_source_db    = aws_db_instance.rdsDbInstance.id
   skip_final_snapshot = true
 }
@@ -800,7 +806,7 @@ resource "aws_lambda_function" "lambdaFunction" {
 
 // data "archive_file" "dummy" {
 //   type = "zip"
-//   output_path = "/Users/maneeshsakthivel/Desktop/Cloud/server.zip"
+//   output_path = "/Users/dwarak/Desktop/Cloud/server.zip"
 
 //   source {
 //     content = "hello"
@@ -918,4 +924,48 @@ resource "aws_iam_role_policy_attachment" "ses_policy_attach_role" {
 role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
 depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
 policy_arn = "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+}
+
+resource "aws_iam_policy" "dynamoDbEc2Policy"{
+  name = "DynamoDb-Ec2"
+  description = "ec2 will be able to talk to dynamodb"
+  policy = <<-EOF
+    {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [      
+              "dynamodb:List*",
+              "dynamodb:DescribeReservedCapacity*",
+              "dynamodb:DescribeLimits",
+              "dynamodb:DescribeTimeToLive"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:BatchGet*",
+                "dynamodb:DescribeStream",
+                "dynamodb:DescribeTable",
+                "dynamodb:Get*",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:BatchWrite*",
+                "dynamodb:CreateTable",
+                "dynamodb:Delete*",
+                "dynamodb:Update*",
+                "dynamodb:PutItem"
+            ],
+            "Resource": "arn:aws:dynamodb:::table/csye6225-dynamo"
+        }
+    ]
+    }
+    EOF
+  }
+
+resource "aws_iam_role_policy_attachment" "attachDynamoDbPolicyToRole" {
+  role       = aws_iam_role.CodeDeployEC2ServiceRole.name
+  policy_arn = aws_iam_policy.dynamoDbEc2Policy.arn
 }
