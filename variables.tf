@@ -74,16 +74,6 @@ variable "acc_num" {
   description = "Account Number"
 }
 
-variable "rds_username" {
-  type        = string
-  description = "rds replica username"
-}
-
-variable "rds_password" {
-  type        = string
-  description = "rds replica password"
-}
-
 variable "availability_zone" {
   type        = string
   description = "availability_zone"

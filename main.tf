@@ -298,6 +298,11 @@ data "aws_db_instance" "database" {
   db_instance_identifier = var.identifier
 }
 
+data "aws_db_instance" "database2" {
+  depends_on             = [aws_db_instance.rdsDbInstance-read-replica]
+  db_instance_identifier = var.identifier
+}
+
 data "aws_caller_identity" "current" {}
 
 resource "aws_codedeploy_app" "code_deploy_app" {
@@ -454,8 +459,7 @@ resource "aws_launch_configuration" "asg_launch_config" {
         sudo echo "export username=${var.username}" >> /etc/environment
         sudo echo "export password=${var.password}" >> /etc/environment
         sudo echo "export bucketName=${var.bucket}" >> /etc/environment
-        sudo echo "export rds_username=${var.rds_username}" >> /etc/environment
-        sudo echo "export rds_password=${var.rds_password}" >> /etc/environment        
+        sudo echo "export host1=jdbc:mysql://${data.aws_db_instance.database2.endpoint}/users" >> /etc/environment      
         EOF
 
   associate_public_ip_address = "true"
@@ -908,14 +912,58 @@ depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
 policy_arn = "${aws_iam_policy.topic_policy.arn}"
 }
 
-resource "aws_iam_role_policy_attachment" "dynamoDB_policy_attach_role" {
-role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
-depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
-policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-}
+// resource "aws_iam_role_policy_attachment" "dynamoDB_policy_attach_role" {
+// role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
+// depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
+// policy_arn = "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+// }
 
 resource "aws_iam_role_policy_attachment" "ses_policy_attach_role" {
 role       = "${aws_iam_role.CodeDeployLambdaServiceRole.name}"
 depends_on = [aws_iam_role.CodeDeployLambdaServiceRole]
 policy_arn = "arn:aws:iam::aws:policy/AmazonSESFullAccess"
+}
+
+resource "aws_iam_policy" "dynamoDbEc2Policy"{
+  name = "DynamoDb-Ec2"
+  description = "ec2 will be able to talk to dynamodb"
+  policy = <<-EOF
+    {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [      
+              "dynamodb:List*",
+              "dynamodb:DescribeReservedCapacity*",
+              "dynamodb:DescribeLimits",
+              "dynamodb:DescribeTimeToLive"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:BatchGet*",
+                "dynamodb:DescribeStream",
+                "dynamodb:DescribeTable",
+                "dynamodb:Get*",
+                "dynamodb:Query",
+                "dynamodb:Scan",
+                "dynamodb:BatchWrite*",
+                "dynamodb:CreateTable",
+                "dynamodb:Delete*",
+                "dynamodb:Update*",
+                "dynamodb:PutItem"
+            ],
+            "Resource": "arn:aws:dynamodb:::table/csye6225-dynamo"
+        }
+    ]
+    }
+    EOF
+  }
+
+resource "aws_iam_role_policy_attachment" "attachDynamoDbPolicyToRole" {
+  role       = aws_iam_role.CodeDeployEC2ServiceRole.name
+  policy_arn = aws_iam_policy.dynamoDbEc2Policy.arn
 }
