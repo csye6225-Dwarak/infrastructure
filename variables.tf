@@ -1,90 +1,89 @@
 variable "vpc_cidr_block" {
   type        = string
-  description = "CIDR for VPC"
-  //   default     = "10.0.0.0/16"
+  description = "variable CIDR for aws VPC"
 }
 
 variable "aws_profile" {
   type        = string
-  description = ""
+  description = "aws profile variable"
 }
 
 variable "subnet_az_cidr" {
   type        = map(any)
-  description = "CIDR for Subnets"
+  description = "variable CIDR for vpc Subnets"
 }
 
 variable "bucket" {
   type        = string
-  description = "Bucket name in S3"
+  description = "variable Bucket name in aws S3"
 }
 
 variable "identifier" {
   type        = string
-  description = "MySql identifier"
+  description = "variable MySql DB identifier aws"
 }
 
 variable "port" {
   type        = string
-  description = "MySql port"
+  description = "variable MySql db port aws"
 }
 
 variable "username" {
   type        = string
-  description = "MySql username"
+  description = "variable MySql db username aws"
 }
 
 variable "password" {
   type        = string
-  description = "MySql password"
+  description = "variable MySql db password aws"
 }
 
 variable "ssh" {
   type        = string
-  description = "SSH Key"
+  description = "variable SSH private Key aws"
 }
 
 variable "ami" {
   type        = string
-  description = "AMI ID"
+  description = "variable AMI ID aws"
 }
 
 variable "my_domain" {
   type        = string
-  description = "Domain Name"
+  description = "variable Domain Name aws"
 }
 
 variable "codedeploy_bucket" {
   type        = string
-  description = "bucket for webapp code deploy"
+  description = "variable bucket name for webapp code deploy aws"
 }
 
 variable "cd_application_name" {
   type        = string
-  description = "Code Deploy Application Name"
+  description = "variable Code Deploy of Application Name aws"
 }
 
 variable "ec2InstanceType" {
   type        = string
-  description = "Instance type of EC2"
+  description = "variable Instance type of aws EC2"
 }
 
 variable "acc_num" {
   type        = string
-  description = "Account Number"
+  description = "variable aws Account Number"
 }
 
 variable "availability_zone" {
   type        = string
-  description = "availability_zone"
+  description = "variable availability zone for rds instances"
 }
 
 variable "primaryZone" {
   type        = string
-  description = "primary availability_zone"
+  description = "variable primary availability zone for rds instances"
 }
 
 variable "secondaryZone" {
   type        = string
-  description = "secondary availability_zone"
+  description = "variable secondary availability zone for rds instances"
 }
