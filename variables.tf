@@ -38,7 +38,7 @@ variable "password" {
   description = "variable MySql db password aws"
 }
 
-variable "ssh" {
+variable "ssh_key_pair" {
   type        = string
   description = "variable SSH private Key aws"
 }
@@ -68,7 +68,7 @@ variable "ec2InstanceType" {
   description = "variable Instance type of aws EC2"
 }
 
-variable "acc_num" {
+variable "account_number" {
   type        = string
   description = "variable aws Account Number"
 }

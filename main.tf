@@ -285,7 +285,7 @@ resource "aws_db_instance" "res-rds-Db-Instance-for-webapp-aws" {
 
 resource "aws_key_pair" "res-ssh_key-for-aws" {
   key_name   = "csye6225_ssh"
-  public_key = var.ssh
+  public_key = var.ssh_key_pair
 }
 
 data "aws_db_instance" "data-read-replica-database-for-aws" {
@@ -359,9 +359,9 @@ resource "aws_route53_record" "res-route53_record-for-aws" {
 }
 
 data "aws_ami" "data-ubuntuec2-in-aws" {
-  //executable_users = [var.acc_num]
+  //executable_users = [var.account_number]
   most_recent = true
-  owners      = [var.acc_num]
+  owners      = [var.account_number]
 }
 
 
